@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GOMIRU ごみる — 高崎経済大学 × 地域ゴミ拾いアプリ</title>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+/* ===== BASE ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --g1:#1a6610;--g2:#2f8f20;--g3:#52b83a;--g4:#a8dc8e;--g5:#edf8e5;
+  --cream:#f8f5ef;--sand:#ede9e0;
+  --amber:#d97706;--coral:#dc4a1a;--blue:#1d6fb5;
+  --text:#1c2c14;--sub:#4a6840;--muted:#8a9e7e;
+  --border:rgba(26,102,16,.12);
+}
+html{scroll-behavior:smooth;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--cream);color:var(--text);line-height:1.7;overflow-x:hidden;}
+a{text-decoration:none;color:inherit;}
+.serif{font-family:'Shippori Mincho',serif;}
+.outfit{font-family:'Outfit',sans-serif;}
+
+/* ===== NAV ===== */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 4vw;height:60px;
+  background:rgba(248,245,239,.95);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  transition:background .3s;
+}
+/* ---- LOGO ---- */
+.nav-logo{display:flex;align-items:center;gap:10px;flex-shrink:0;text-decoration:none;}
+.nav-logo-icon{
+  width:38px;height:38px;border-radius:10px;
+  background:var(--g1);display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.nav-logo-text{line-height:1.1;}
+.nav-logo-en{
+  font-family:'Outfit',sans-serif;font-weight:900;font-size:18px;
+  letter-spacing:.08em;color:var(--g1);display:block;
+}
+.nav-logo-ja{
+  font-family:'Noto Sans JP',sans-serif;font-size:9px;font-weight:500;
+  color:var(--sub);letter-spacing:.12em;display:block;margin-top:1px;
+}
+/* ---- LINKS ---- */
+.nav-links{
+  display:flex;gap:2rem;list-style:none;
+  flex-shrink:0;
+}
+.nav-links a{
+  font-size:12.5px;font-weight:500;color:var(--sub);
+  white-space:nowrap;letter-spacing:.04em;
+  transition:color .2s;padding-bottom:2px;
+  position:relative;
+}
+.nav-links a::after{
+  content:'';position:absolute;bottom:0;left:0;
+  width:0;height:1px;background:var(--g1);transition:width .3s;
+}
+.nav-links a:hover{color:var(--g1);}
+.nav-links a:hover::after{width:100%;}
+.nav-cta{
+  background:var(--g1);color:#fff;
+  font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;
+  padding:8px 20px;border-radius:100px;letter-spacing:.04em;
+  white-space:nowrap;flex-shrink:0;
+  transition:background .2s,transform .15s;
+}
+.nav-cta:hover{background:var(--g2);transform:translateY(-1px);}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;flex-shrink:0;}
+.hamburger span{display:block;width:22px;height:1.5px;background:var(--text);}
+@media(max-width:860px){
+  .nav-links,.nav-cta{display:none;}
+  .hamburger{display:flex;}
+}
+
+/* ===== HERO ===== */
+.hero{
+  min-height:92vh;display:flex;flex-direction:column;justify-content:center;
+  padding-top:60px;overflow:hidden;
+  background:linear-gradient(160deg,var(--g5) 0%,var(--cream) 65%);
+  position:relative;
+}
+.hero::before{
+  content:'';position:absolute;top:-80px;right:-80px;
+  width:480px;height:480px;border-radius:50%;
+  background:radial-gradient(circle,rgba(82,184,58,.13),transparent 70%);
+  pointer-events:none;
+}
+.hero::after{
+  content:'';position:absolute;bottom:-60px;left:-40px;
+  width:340px;height:340px;border-radius:50%;
+  background:radial-gradient(circle,rgba(26,102,16,.07),transparent 70%);
+  pointer-events:none;
+}
+.hero-left{
+  display:flex;flex-direction:column;
+  flex:1;
+  min-width:0;
+}
+.hero-bottom-row{
+  display:flex;align-items:flex-start;gap:3rem;
+  flex-wrap:wrap;
+}
+.eyebrow{
+  font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--g2);
+  display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;
+  opacity:0;animation:fadeUp .8s .2s forwards;
+}
+.eyebrow::before{content:'';width:24px;height:1px;background:var(--g2);}
+.hero-h1{
+  font-family:'Shippori Mincho',serif;
+  font-size:clamp(36px,4.5vw,62px);font-weight:600;
+  line-height:1.25;color:var(--text);margin-bottom:1.1rem;
+  opacity:0;animation:fadeUp .8s .35s forwards;
+}
+.hero-h1 em{font-style:normal;color:var(--g1);}
+.hero-lead{
+  font-size:14px;line-height:1.9;color:var(--sub);
+  max-width:380px;margin-bottom:2rem;
+  opacity:0;animation:fadeUp .8s .5s forwards;
+}
+.hero-btns{
+  display:flex;gap:12px;flex-wrap:wrap;
+  opacity:0;animation:fadeUp .8s .65s forwards;
+}
+.btn-primary{
+  background:var(--g1);color:#fff;
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;
+  padding:13px 28px;border-radius:100px;letter-spacing:.04em;
+  box-shadow:0 4px 18px rgba(26,102,16,.25);
+  transition:background .2s,transform .15s,box-shadow .2s;
+}
+.btn-primary:hover{background:var(--g2);transform:translateY(-2px);box-shadow:0 8px 26px rgba(26,102,16,.3);}
+.btn-outline{
+  border:1.5px solid var(--g1);color:var(--g1);
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;
+  padding:12px 24px;border-radius:100px;letter-spacing:.04em;
+  transition:background .2s,transform .15s;
+}
+.btn-outline:hover{background:var(--g5);transform:translateY(-2px);}
+
+/* --- HERO INNER --- */
+.hero-inner{
+  display:flex;align-items:stretch;justify-content:space-between;
+  gap:3vw;padding:5vw 6vw 5vw 9vw;
+  position:relative;z-index:1;
+  max-width:1300px;width:100%;
+}
+/* --- GAUGE --- */
+.gauge-wrap{
+  background:#fff;border:1px solid var(--border);
+  border-radius:24px;padding:2rem;
+  display:flex;flex-direction:column;align-items:center;gap:1.25rem;
+  opacity:0;animation:fadeUp .8s .8s forwards;
+  flex-shrink:0;min-width:260px;
+  box-shadow:0 8px 32px rgba(26,102,16,.1);
+  text-align:center;
+}
+.gauge-svg-wrap{position:relative;flex-shrink:0;}
+.gauge-center{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  text-align:center;
+}
+.gauge-num{
+  font-family:'DM Serif Display',serif;
+  font-size:28px;color:var(--g1);line-height:1;
+}
+.gauge-unit{font-size:10px;color:var(--muted);font-weight:500;}
+.gauge-info{}
+.gauge-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;}
+.gauge-sub{font-size:11px;color:var(--sub);line-height:1.6;}
+.gauge-reward{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--g5);border:1px solid var(--g4);
+  border-radius:100px;padding:3px 10px;
+  font-size:10px;font-weight:700;color:var(--g1);
+  margin-top:6px;
+}
+.gauge-bar-strip{
+  height:6px;border-radius:100px;background:#e8e8e8;margin-top:10px;overflow:hidden;
+}
+.gauge-bar-fill{
+  height:100%;border-radius:100px;
+  background:linear-gradient(90deg,var(--g3),var(--g2));
+  width:67%;transition:width 1.5s 1s cubic-bezier(.22,1,.36,1);
+}
+
+/* --- HERO RIGHT (APP SCREENSHOT) --- */
+.hero-right{
+  position:relative;overflow:hidden;background:var(--g1);
+}
+.hero-right-bg{
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,#1a6610 0%,#2f8f20 60%,#52b83a 100%);
+}
+.hero-pattern{
+  position:absolute;inset:0;opacity:.07;
+  background-image:radial-gradient(circle,#fff 1px,transparent 1px);
+  background-size:28px 28px;
+}
+.hero-app-frame{
+  position:relative;z-index:2;
+  display:flex;align-items:center;justify-content:center;
+  height:100%;padding:80px 40px;
+}
+.app-device{
+  width:210px;
+  background:var(--cream);
+  border-radius:32px;
+  overflow:hidden;
+  border:6px solid rgba(255,255,255,.3);
+  box-shadow:0 24px 60px rgba(0,0,0,.35);
+  animation:float 4s ease-in-out infinite;
+}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+/* app status bar */
+.app-status{background:var(--g1);color:#fff;font-family:'Outfit',sans-serif;font-size:9px;font-weight:700;padding:8px 14px 6px;display:flex;justify-content:space-between;}
+/* app header */
+.app-hdr{background:linear-gradient(155deg,var(--g1),var(--g2));padding:12px 14px;color:#fff;}
+.app-hdr-greet{font-size:8px;opacity:.75;font-weight:600;}
+.app-hdr-title{font-size:13px;font-weight:900;margin-top:1px;line-height:1.3;}
+.app-pt-pill{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.18);border-radius:20px;padding:3px 10px;font-size:9px;font-weight:900;margin-top:7px;}
+.app-pt-pill b{font-size:13px;}
+.app-chara-wrap{position:absolute;right:10px;top:8px;}
+/* app map */
+.app-map{height:120px;background:#c8e8b2;position:relative;overflow:hidden;}
+.app-map-road-h{position:absolute;height:7px;background:#fff;opacity:.5;left:0;right:0;}
+.app-map-road-v{position:absolute;width:7px;background:#fff;opacity:.5;top:0;bottom:0;}
+.app-map-block{position:absolute;background:#a0d880;border-radius:5px;opacity:.65;}
+.app-map-pin{position:absolute;width:11px;height:11px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;}
+.app-map-fab{position:absolute;right:8px;bottom:8px;width:28px;height:28px;border-radius:50%;background:var(--g1);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;box-shadow:0 2px 8px rgba(26,102,16,.4);}
+.app-univ-lbl{position:absolute;top:5px;left:5px;background:rgba(255,255,255,.9);color:var(--g1);font-size:7px;font-weight:700;padding:2px 6px;border-radius:20px;}
+.app-circle{position:absolute;top:50%;left:50%;border-radius:50%;border:1.5px dashed rgba(26,102,16,.5);transform:translate(-50%,-50%);}
+/* app stats */
+.app-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:8px;}
+.app-stat{background:#fff;border-radius:9px;padding:6px;text-align:center;border:1px solid var(--border);}
+.app-stat b{display:block;font-size:13px;font-weight:900;color:var(--g1);}
+.app-stat span{font-size:7px;font-weight:700;color:var(--muted);}
+/* app mascot msg */
+.app-msg{margin:0 7px 7px;background:var(--g5);border:1px solid var(--g4);border-radius:10px;padding:7px 9px;display:flex;gap:7px;align-items:center;}
+.app-msg p{font-size:8px;color:var(--sub);font-weight:700;flex:1;line-height:1.4;}
+/* app nav */
+.app-nav{display:flex;background:#fff;border-top:1px solid var(--border);padding:5px 0 8px;}
+.app-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.app-nav-item span{font-size:7px;font-weight:700;color:#bbb;}
+.app-nav-item.on span{color:var(--g2);}
+.app-nav-icon{font-size:14px;}
+
+/* ===== SECTION COMMON ===== */
+section{padding:90px 7vw;}
+.sec-eyebrow{
+  font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--g2);
+  display:flex;align-items:center;gap:10px;margin-bottom:.9rem;
+}
+.sec-eyebrow::before{content:'';width:22px;height:1px;background:var(--g2);}
+.sec-h2{
+  font-family:'Shippori Mincho',serif;
+  font-size:clamp(26px,3vw,44px);font-weight:600;
+  line-height:1.3;color:var(--text);margin-bottom:.9rem;
+}
+.sec-lead{font-size:14px;color:var(--sub);line-height:1.9;max-width:500px;}
+
+/* ===== CONCEPT ===== */
+.concept{background:var(--cream);}
+.concept-grid{display:grid;grid-template-columns:1fr 1fr;gap:6vw;align-items:center;margin-top:3.5rem;}
+.concept-visual{
+  aspect-ratio:4/3;border-radius:4px;overflow:hidden;
+  background:linear-gradient(160deg,var(--g5),#d4f0c0,var(--g4));
+  display:flex;align-items:center;justify-content:center;position:relative;
+}
+.concept-ring{
+  position:absolute;border-radius:50%;border:1px dashed;
+  top:50%;left:50%;transform:translate(-50%,-50%);
+}
+.concept-ring-1{width:180px;height:180px;border-color:var(--g3);animation:spin 20s linear infinite;}
+.concept-ring-2{width:260px;height:260px;border-color:var(--g4);animation:spin 30s linear infinite reverse;}
+.concept-ring-3{width:340px;height:340px;border-color:rgba(168,220,142,.4);animation:spin 40s linear infinite;}
+@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg);}}
+.concept-core{
+  width:120px;height:120px;border-radius:50%;
+  background:var(--g2);display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 20px rgba(82,184,58,.12);z-index:1;font-size:48px;
+}
+.concept-tag{
+  position:absolute;background:#fff;border-radius:100px;
+  padding:5px 12px;font-size:10px;font-weight:700;color:var(--g1);
+  box-shadow:0 2px 10px rgba(0,0,0,.1);white-space:nowrap;
+}
+.concept-text .quote{
+  font-family:'Shippori Mincho',serif;
+  font-size:clamp(20px,2.2vw,30px);line-height:1.6;color:var(--g1);margin-bottom:1.25rem;
+}
+.concept-text p{font-size:14px;color:var(--sub);line-height:1.9;margin-bottom:.9rem;}
+
+/* ===== HOW (4 STEPS) ===== */
+.how{background:var(--sand);}
+.how-steps{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  gap:2px;border:1px solid var(--border);margin-top:3.5rem;
+}
+.how-step{
+  background:var(--cream);padding:2.5rem;position:relative;overflow:hidden;
+  border:1px solid var(--border);transition:background .3s;
+}
+.how-step:hover{background:var(--g5);}
+.how-step-num{
+  font-family:'DM Serif Display',serif;font-size:56px;color:var(--g4);
+  line-height:1;margin-bottom:.4rem;transition:color .3s;
+}
+.how-step:hover .how-step-num{color:var(--g3);}
+.how-step-en{
+  font-family:'Outfit',sans-serif;font-size:10px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--g2);margin-bottom:.6rem;
+}
+.how-step-title{
+  font-family:'Shippori Mincho',serif;font-size:20px;font-weight:600;
+  color:var(--text);margin-bottom:.6rem;
+}
+.how-step-body{font-size:13px;color:var(--sub);line-height:1.85;}
+.step-pill{
+  display:inline-block;margin-top:.9rem;
+  background:var(--g1);color:#fff;
+  font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;
+  padding:4px 12px;border-radius:100px;
+}
+.step-pill.amber{background:var(--amber);}
+.step-pill.coral{background:var(--coral);}
+
+/* ===== EXPAND MAP ===== */
+.expand-sec{background:var(--g1);color:#fff;overflow:hidden;}
+.expand-inner{display:grid;grid-template-columns:1fr 1fr;gap:5vw;align-items:center;}
+.expand-text .sec-eyebrow{color:var(--g4);}
+.expand-text .sec-eyebrow::before{background:var(--g4);}
+.expand-text .sec-h2{color:#fff;}
+.expand-text .sec-lead{color:rgba(255,255,255,.75);max-width:420px;}
+.expand-table{
+  margin-top:1.75rem;border:1px solid rgba(255,255,255,.15);
+  border-radius:4px;overflow:hidden;width:100%;
+}
+.expand-row{
+  display:grid;grid-template-columns:1fr 1fr 2fr;
+  padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.08);
+  font-size:12px;gap:6px;
+}
+.expand-row:last-child{border-bottom:none;}
+.expand-row.hdr{background:rgba(255,255,255,.1);font-size:10px;font-weight:700;letter-spacing:.08em;}
+.expand-row .u{color:var(--g4);font-weight:700;}
+.expand-row .r{color:#fff;font-family:'Outfit',sans-serif;font-weight:700;}
+.expand-row .a{color:rgba(255,255,255,.6);}
+.expand-map-wrap{
+  border-radius:12px;overflow:hidden;
+  height:380px;border:2px solid rgba(255,255,255,.2);
+  position:relative;
+}
+#expand-map{width:100%;height:100%;}
+.expand-map-overlay{
+  position:absolute;bottom:12px;left:12px;
+  background:rgba(26,102,16,.9);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.2);
+  border-radius:12px;padding:8px 14px;
+  font-size:11px;color:#fff;font-weight:700;
+  display:flex;align-items:center;gap:8px;
+}
+.expand-dot{width:7px;height:7px;border-radius:50%;background:var(--g3);}
+
+/* ===== EVOLUTION ===== */
+.evo-sec{background:var(--cream);}
+.evo-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:0;border:1px solid var(--border);margin-top:3.5rem;
+}
+.evo-card{
+  padding:2rem 1.5rem;border-right:1px solid var(--border);
+  position:relative;overflow:hidden;transition:background .3s;
+}
+.evo-card:last-child{border-right:none;}
+.evo-card:hover{background:var(--g5);}
+.evo-lv{
+  font-family:'Outfit',sans-serif;font-size:9px;font-weight:700;
+  letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:1.25rem;
+}
+.evo-face{
+  width:72px;height:72px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:1rem;transition:transform .3s;overflow:hidden;
+}
+.evo-card:hover .evo-face{transform:scale(1.08);}
+.evo-name-ja{
+  font-family:'Shippori Mincho',serif;
+  font-size:18px;font-weight:600;color:var(--text);margin-bottom:3px;
+}
+.evo-name-en{
+  font-family:'Outfit',sans-serif;font-size:9px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem;
+}
+.evo-pt{font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--g2);}
+.evo-desc{font-size:11px;color:var(--sub);margin-top:.6rem;line-height:1.7;}
+.evo-arrow{
+  position:absolute;right:-10px;top:50%;transform:translateY(-50%);
+  width:20px;height:20px;border-radius:50%;
+  background:var(--cream);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;color:var(--g2);z-index:1;
+}
+.king-pill{
+  display:inline-flex;align-items:center;gap:4px;
+  background:var(--amber);color:#fff;
+  font-size:9px;font-weight:700;
+  padding:2px 9px;border-radius:100px;margin-top:.5rem;
+}
+
+/* ===== CO2 IMPACT ===== */
+.impact-sec{background:var(--sand);}
+.impact-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:7vw;align-items:center;margin-top:3.5rem;
+}
+.impact-visual{
+  background:var(--g1);border-radius:16px;
+  padding:2.5rem;color:#fff;
+  position:relative;overflow:hidden;
+}
+.impact-bg-pattern{
+  position:absolute;inset:0;opacity:.07;
+  background-image:radial-gradient(circle,#fff 1px,transparent 1px);
+  background-size:22px 22px;
+}
+.impact-stat-big{
+  font-family:'DM Serif Display',serif;
+  font-size:64px;line-height:1;color:var(--g3);margin-bottom:.25rem;
+  position:relative;z-index:1;
+}
+.impact-stat-unit{font-size:20px;color:rgba(255,255,255,.6);font-weight:400;}
+.impact-stat-label{
+  font-size:14px;font-weight:700;color:rgba(255,255,255,.8);
+  margin-bottom:1.5rem;position:relative;z-index:1;
+}
+.impact-items{display:flex;flex-direction:column;gap:10px;position:relative;z-index:1;}
+.impact-item{
+  display:flex;align-items:center;gap:12px;
+  background:rgba(255,255,255,.1);border-radius:12px;padding:12px 16px;
+}
+.impact-item-icon{font-size:22px;flex-shrink:0;}
+.impact-item-val{
+  font-family:'Outfit',sans-serif;font-weight:700;font-size:16px;color:#fff;
+}
+.impact-item-label{font-size:11px;color:rgba(255,255,255,.65);}
+.impact-text .sec-h2{margin-bottom:.9rem;}
+.impact-text p{font-size:14px;color:var(--sub);line-height:1.9;margin-bottom:.9rem;}
+.impact-note{
+  background:var(--g5);border-left:3px solid var(--g3);
+  border-radius:0 8px 8px 0;padding:12px 16px;
+  font-size:12px;color:var(--sub);line-height:1.7;margin-top:1rem;
+}
+
+/* ===== SDGS ===== */
+.sdgs-sec{background:var(--text);color:#fff;overflow:hidden;position:relative;}
+.sdgs-bg{
+  position:absolute;inset:0;opacity:.04;
+  background-image:radial-gradient(circle,#fff 1px,transparent 1px);
+  background-size:30px 30px;
+}
+.sdgs-sec .sec-eyebrow{color:var(--g4);}
+.sdgs-sec .sec-eyebrow::before{background:var(--g4);}
+.sdgs-sec .sec-h2{color:#fff;}
+.sdgs-sec .sec-lead{color:rgba(255,255,255,.7);}
+.sdgs-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:2px;margin-top:3rem;
+}
+.sdg-card{
+  padding:2rem;border:1px solid rgba(255,255,255,.08);
+  transition:background .3s;position:relative;
+}
+.sdg-card:hover{background:rgba(255,255,255,.05);}
+.sdg-num-badge{
+  width:52px;height:52px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Outfit',sans-serif;font-size:20px;font-weight:900;
+  color:#fff;margin-bottom:1rem;flex-shrink:0;
+}
+.sdg-title{
+  font-family:'Shippori Mincho',serif;
+  font-size:17px;font-weight:600;color:#fff;margin-bottom:.5rem;
+}
+.sdg-body{font-size:12px;color:rgba(255,255,255,.6);line-height:1.8;}
+.sdg-tag{
+  display:inline-block;margin-top:.75rem;
+  font-size:10px;font-weight:700;
+  padding:3px 10px;border-radius:100px;
+}
+.sdgs-note{
+  margin-top:2.5rem;background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.1);border-radius:12px;
+  padding:1.5rem 2rem;
+}
+.sdgs-note p{font-size:13px;color:rgba(255,255,255,.7);line-height:1.8;}
+
+/* ===== ADMIN DATA ===== */
+.admin-sec{background:var(--g5);border-top:1px solid var(--g4);border-bottom:1px solid var(--g4);}
+.admin-inner{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:5vw;align-items:center;
+}
+.data-flow{display:flex;flex-direction:column;gap:0;margin-top:2rem;}
+.data-step{
+  display:flex;align-items:flex-start;gap:1rem;
+  padding:1.25rem 0;border-bottom:1px solid var(--border);
+  position:relative;
+}
+.data-step:last-child{border-bottom:none;}
+.data-step-icon{
+  width:40px;height:40px;border-radius:10px;
+  background:var(--g1);display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;
+}
+.data-step-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px;}
+.data-step-body{font-size:12px;color:var(--sub);line-height:1.7;}
+.data-card{
+  background:#fff;border:1px solid var(--border);border-radius:16px;padding:1.75rem;
+}
+.data-card-title{
+  font-family:'Shippori Mincho',serif;
+  font-size:20px;font-weight:600;color:var(--text);margin-bottom:1rem;
+}
+.data-report-preview{
+  background:var(--cream);border:1px solid var(--border);
+  border-radius:10px;padding:1rem;
+}
+.drp-header{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:.75rem;
+  font-size:11px;font-weight:700;color:var(--sub);letter-spacing:.08em;
+}
+.drp-row{
+  display:flex;align-items:center;gap:10px;
+  padding:7px 0;border-bottom:1px solid var(--border);
+  font-size:12px;
+}
+.drp-row:last-child{border-bottom:none;}
+.drp-rank{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--g1);color:#fff;
+  font-size:9px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.drp-name{flex:1;color:var(--sub);}
+.drp-bar-wrap{width:80px;height:6px;background:#e8e8e8;border-radius:100px;overflow:hidden;}
+.drp-bar{height:100%;border-radius:100px;background:var(--g2);}
+.drp-count{font-weight:700;color:var(--text);font-size:11px;width:40px;text-align:right;}
+
+/* ===== FEATURES ===== */
+.features-sec{background:var(--sand);}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:3.5rem;}
+.feat-card{
+  background:var(--cream);padding:2.25rem;border:1px solid var(--border);
+  transition:background .3s,transform .2s;
+}
+.feat-card:hover{background:#fff;transform:translateY(-2px);}
+.feat-tag{
+  font-family:'Outfit',sans-serif;font-size:9px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;
+  display:inline-block;padding:3px 10px;border-radius:100px;margin-bottom:1.25rem;
+}
+.tag-g{background:var(--g5);color:var(--g1);}
+.tag-a{background:#fef3c7;color:#92400e;}
+.tag-c{background:#fee2e2;color:#991b1b;}
+.tag-b{background:#dbeafe;color:#1e40af;}
+.feat-title{
+  font-family:'Shippori Mincho',serif;
+  font-size:19px;font-weight:600;color:var(--text);margin-bottom:.6rem;
+}
+.feat-body{font-size:12.5px;color:var(--sub);line-height:1.85;}
+
+/* ===== EVENTS ===== */
+.events-sec{background:var(--cream);}
+.ev-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:2px;border:1px solid var(--border);margin-top:3.5rem;
+}
+.ev-card{
+  padding:2rem;border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border);transition:background .3s;
+}
+.ev-card:hover{background:var(--g5);}
+.ev-mon{
+  font-family:'DM Serif Display',serif;
+  font-size:40px;color:var(--g4);line-height:1;margin-bottom:.2rem;
+}
+.ev-mon-ja{
+  font-family:'Outfit',sans-serif;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:1.1rem;
+}
+.ev-title{
+  font-family:'Shippori Mincho',serif;
+  font-size:17px;font-weight:600;color:var(--text);margin-bottom:.4rem;
+}
+.ev-body{font-size:11.5px;color:var(--sub);line-height:1.75;}
+.ev-pill{
+  display:inline-block;margin-top:.6rem;
+  font-size:10px;font-weight:700;color:var(--g1);background:var(--g5);
+  padding:3px 9px;border-radius:100px;
+}
+
+/* ===== SHOPS ===== */
+.shops-sec{background:var(--sand);}
+.shops-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  gap:2px;border:1px solid var(--border);margin-top:3.5rem;
+}
+.shop-card{
+  background:var(--cream);padding:1.75rem 2.25rem;
+  border:1px solid var(--border);display:flex;gap:1.1rem;
+  transition:background .3s;
+}
+.shop-card:hover{background:#fff;}
+.shop-num{
+  font-family:'DM Serif Display',serif;
+  font-size:30px;color:var(--g4);flex-shrink:0;line-height:1;padding-top:3px;
+}
+.shop-name{
+  font-family:'Shippori Mincho',serif;
+  font-size:17px;font-weight:600;color:var(--text);margin-bottom:3px;
+}
+.shop-genre{font-size:10px;color:var(--muted);margin-bottom:.4rem;}
+.shop-note{font-size:12px;color:var(--sub);line-height:1.7;}
+.shop-pt{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;color:var(--g1);margin-top:.4rem;}
+
+/* ===== CTA ===== */
+.cta-sec{
+  background:var(--g1);text-align:center;
+  padding:110px 7vw;position:relative;overflow:hidden;
+}
+.cta-bg{
+  position:absolute;inset:0;opacity:.05;
+  background-image:radial-gradient(circle,#fff 1px,transparent 1px);
+  background-size:30px 30px;
+}
+.cta-sec .sec-eyebrow{justify-content:center;color:var(--g4);}
+.cta-sec .sec-eyebrow::before{background:var(--g4);}
+.cta-h2{
+  font-family:'Shippori Mincho',serif;
+  font-size:clamp(32px,4.5vw,58px);color:#fff;font-weight:600;
+  line-height:1.3;margin-bottom:1.1rem;position:relative;z-index:1;
+}
+.cta-lead{font-size:15px;color:rgba(255,255,255,.75);margin-bottom:2.25rem;position:relative;z-index:1;}
+.cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1;}
+.btn-white{
+  background:#fff;color:var(--g1);
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;
+  padding:14px 32px;border-radius:100px;letter-spacing:.04em;
+  box-shadow:0 4px 18px rgba(0,0,0,.2);transition:transform .15s,box-shadow .2s;
+}
+.btn-white:hover{transform:translateY(-2px);box-shadow:0 8px 26px rgba(0,0,0,.25);}
+.btn-ghost{
+  border:1.5px solid rgba(255,255,255,.45);color:#fff;
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;
+  padding:13px 28px;border-radius:100px;letter-spacing:.04em;
+  transition:background .2s,transform .15s;
+}
+.btn-ghost:hover{background:rgba(255,255,255,.1);transform:translateY(-2px);}
+
+/* ===== FOOTER ===== */
+footer{background:var(--text);padding:56px 7vw 28px;color:rgba(255,255,255,.55);}
+.footer-top{
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  gap:3.5rem;margin-bottom:2.5rem;padding-bottom:2.5rem;
+  border-bottom:1px solid rgba(255,255,255,.1);
+}
+.footer-logo{display:flex;align-items:center;gap:10px;margin-bottom:.9rem;}
+.footer-logo-icon{
+  width:32px;height:32px;border-radius:8px;
+  background:var(--g2);display:flex;align-items:center;justify-content:center;font-size:15px;
+}
+.footer-logo-en{
+  font-family:'Outfit',sans-serif;font-weight:900;font-size:17px;
+  letter-spacing:.08em;color:#fff;display:block;
+}
+.footer-logo-ja{font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.1em;}
+.footer-desc{font-size:12px;line-height:1.8;}
+.footer-col h4{
+  font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:.15em;text-transform:uppercase;
+  color:rgba(255,255,255,.35);margin-bottom:.9rem;
+}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:.5rem;}
+.footer-col ul li a{font-size:12px;color:rgba(255,255,255,.55);transition:color .2s;}
+.footer-col ul li a:hover{color:var(--g3);}
+.footer-bottom{display:flex;justify-content:space-between;font-size:11px;}
+
+/* ===== REVEAL ===== */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .8s,transform .8s;}
+.reveal.on{opacity:1;transform:translateY(0);}
+
+/* ===== ANIMS ===== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:900px){
+  .hero-inner{flex-direction:column;padding:5rem 6vw 3rem;gap:2rem;}
+  .gauge-wrap{width:100%;}
+  .hero-img-wrap{width:100% !important;min-height:280px !important;}
+  .hero-left{padding:5rem 6vw 3rem;}
+  .hero-right{min-height:420px;}
+  .concept-grid,.expand-inner,.impact-grid,.admin-inner{grid-template-columns:1fr;}
+  .evo-grid{grid-template-columns:repeat(2,1fr);}
+  .feat-grid,.ev-grid,.sdgs-grid{grid-template-columns:repeat(2,1fr);}
+  .shops-grid{grid-template-columns:1fr;}
+  .footer-top{grid-template-columns:1fr;gap:2rem;}
+  .how-steps{grid-template-columns:1fr;}
+}
+@media(max-width:600px){
+  section{padding:64px 5vw;}
+  .evo-grid,.feat-grid,.ev-grid,.sdgs-grid{grid-template-columns:1fr;}
+  .expand-row{grid-template-columns:1fr 1fr;}
+  .expand-row .a{display:none;}
+  .gauge-wrap{flex-direction:column;text-align:center;}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav id="main-nav">
+  <a href="#top" class="nav-logo">
+    <div class="nav-logo-icon">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <path d="M11 2C9 5 5 6 5 10c0 3.3 2.7 6 6 6s6-2.7 6-6c0-4-4-5-6-8z" fill="#a8dc8e"/>
+        <path d="M11 4C9.5 6.5 7 7.5 7 11c0 2.2 1.8 4 4 4s4-1.8 4-4c0-3.5-2.5-4.5-4-7z" fill="white" opacity=".6"/>
+        <circle cx="11" cy="11" r="2.5" fill="white" opacity=".8"/>
+      </svg>
+    </div>
+    <div class="nav-logo-text">
+      <span class="nav-logo-en">GOMIRU</span>
+      <span class="nav-logo-ja">ごみる</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#concept">コンセプト</a></li>
+    <li><a href="#how">使い方</a></li>
+    <li><a href="#evolution">キャラクター</a></li>
+    <li><a href="#sdgs">SDGs</a></li>
+    <li><a href="#events">イベント</a></li>
+    <li><a href="#shops">提携店舗</a></li>
+  </ul>
+  <a href="#cta" class="nav-cta">アプリを試す</a>
+  <div class="hamburger" onclick="toggleNav()">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="top" style="padding:0;">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <p class="eyebrow">Takasaki University × Community App</p>
+      <h1 class="hero-h1">ゴミを拾うほど、<br><em>街が、広がる。</em></h1>
+      <p class="hero-lead">
+        高崎経済大学発の地域ゴミ拾いアプリ。写真を撮るだけでAIが活動を認定し、仲間が増えるほど活動できる範囲が広がる。ゲームと地域連携で、継続できる清掃の形をつくります。
+      </p>
+      <div class="hero-btns">
+        <a href="#cta" class="btn-primary">アプリを試してみる</a>
+        <a href="#how" class="btn-outline">使い方を見る</a>
+      </div>
+    </div>
+
+    <!-- CIRCULAR GAUGE (right) -->
+    <div class="gauge-wrap" id="gauge-wrap">
+      <div class="gauge-svg-wrap">
+        <svg width="140" height="140" viewBox="0 0 140 140">
+          <circle cx="70" cy="70" r="58" fill="none" stroke="#e8e8e8" stroke-width="10"/>
+          <circle cx="70" cy="70" r="58" fill="none"
+            stroke="url(#gaugeGrad)" stroke-width="10"
+            stroke-linecap="round"
+            stroke-dasharray="364"
+            stroke-dashoffset="120"
+            transform="rotate(-90 70 70)"
+            id="gauge-ring"
+            style="transition:stroke-dashoffset 1.5s 1s cubic-bezier(.22,1,.36,1)"/>
+          <defs>
+            <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#52b83a"/>
+              <stop offset="100%" stop-color="#1a6610"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="gauge-center">
+          <div class="gauge-num" id="gauge-num">67</div>
+          <div class="gauge-unit">/ 100袋</div>
+        </div>
+      </div>
+      <div class="gauge-info">
+        <div class="gauge-title">今月のコミュニティ<br>回収量</div>
+        <div class="gauge-sub">みんなで100袋達成すると<br>全員に特典が解放！</div>
+        <div class="gauge-reward">🎁 あと33袋で特典解放！</div>
+        <div class="gauge-bar-strip"><div class="gauge-bar-fill"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CONCEPT ===== -->
+<section class="concept" id="concept">
+  <div class="concept-grid">
+
+    <div class="concept-text reveal">
+      <p class="sec-eyebrow">CONCEPT</p>
+      <h2 class="sec-h2">ゴミを拾うことを、<br>もっと楽しく。</h2>
+      <p class="quote">「続かない」を、仕組みで変える。</p>
+      <p>高崎経済大学の周辺には、日々ゴミが散乱しています。一人で拾っても達成感が得づらく、なかなか続かない。GOミルは、その課題をゲームと地域連携の力で解決します。</p>
+      <p>写真を撮るだけでAIがゴミの量を判定してポイントを付与。ポイントは地域のお店でクーポンと交換できます。大学と街がつながる、新しい清掃の形です。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== HOW (4 STEPS) ===== -->
+<section class="how" id="how">
+  <div class="reveal">
+    <p class="sec-eyebrow">HOW IT WORKS</p>
+    <h2 class="sec-h2">4ステップで、今日から始められる。</h2>
+    <p class="sec-lead">難しい操作は一切不要。スマホで写真を撮るだけで、あなたの活動が記録されます。</p>
+  </div>
+  <div class="how-steps">
+    <div class="how-step reveal" style="padding-top:0;overflow:hidden;">
+      <div style="margin:-2.5rem -2.5rem 1.5rem -2.5rem;height:200px;overflow:hidden;">
+        <img src="gomiru_images/img-step01.jpg" alt="スマホでゴミを撮影"
+          style="width:100%;height:100%;object-fit:cover;display:block;">
+      </div>
+      <div class="how-step-num">01</div>
+      <div class="how-step-en">REPORT</div>
+      <div class="how-step-title">ゴミを発見したら、<br>写真を撮る</div>
+      <div class="how-step-body">拾えない時でも大丈夫。ゴミが落ちている場所を撮影してマップに投稿するだけで「発見レポート」に。GPSで位置が自動タグ付けされ、ゴミ種類の分類データが蓄積されます。</div>
+      <span class="step-pill">＋ 0.5pt 獲得</span>
+    </div>
+    <div class="how-step reveal" style="padding-top:0;overflow:hidden;">
+      <div style="margin:-2.5rem -2.5rem 1.5rem -2.5rem;height:200px;overflow:hidden;">
+        <img src="gomiru_images/img-step02.jpg" alt="ゴミを拾うイラスト"
+          style="width:100%;height:100%;object-fit:cover;display:block;">
+      </div>
+      <div class="how-step-num">02</div>
+      <div class="how-step-en">CLEAN &amp; EARN</div>
+      <div class="how-step-title">ゴミを拾って<br>AIに判定してもらう</div>
+      <div class="how-step-body">マップのピンを確認して現地へ。ゴミを拾ったらビフォーアフターの写真を投稿するだけ。AIがゴミの量・密度を解析して1〜3ptを自動付与。CO₂削減量も同時に計算されます。</div>
+      <span class="step-pill amber">1〜3pt 獲得</span>
+    </div>
+    <div class="how-step reveal">
+      <div class="how-step-num">03</div>
+      <div class="how-step-en">COMPETE</div>
+      <div class="how-step-title">ゼミ・サークルで<br>競い合う</div>
+      <div class="how-step-body">グループを作ってメンバーの合計ポイントでランキングを競えます。複数人で同時に活動するとチームボーナスが発生。毎月のコミュニティゲージを全員で満タンにしましょう。</div>
+      <span class="step-pill">グループボーナス付き</span>
+    </div>
+    <div class="how-step reveal">
+      <div class="how-step-num">04</div>
+      <div class="how-step-en">REDEEM</div>
+      <div class="how-step-title">ポイントを<br>地域のクーポンへ</div>
+      <div class="how-step-body">貯まったポイントは大学周辺の提携店舗のクーポンと交換できます。コミュニティゲージが満タンになると全ユーザーに特別特典が届きます。</div>
+      <span class="step-pill coral">5ptからクーポン交換</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== EXPAND MAP ===== -->
+<section class="expand-sec" id="expand">
+  <div class="expand-inner">
+    <div class="expand-text reveal">
+      <p class="sec-eyebrow">EXPAND CIRCLE</p>
+      <h2 class="sec-h2">仲間が増えるほど、<br>街が広がる。</h2>
+      <p class="sec-lead">参加ユーザー数に応じて、活動できる範囲が自動的に広がります。範囲外のゴミピンには鍵がかかり「あと〇人で解放！」と表示されることが招待の動機になります。</p>
+      <div class="expand-table">
+        <div class="expand-row hdr"><div>参加者</div><div>活動半径</div><div>エリア</div></div>
+        <div class="expand-row"><div class="u">1〜4人</div><div class="r">80〜120m</div><div class="a">キャンパス内のみ</div></div>
+        <div class="expand-row"><div class="u">5〜9人</div><div class="r">160〜200m</div><div class="a">大学周辺の道路</div></div>
+        <div class="expand-row" style="background:rgba(255,255,255,.06);"><div class="u" style="color:#fff;">▶ 現在 8人</div><div class="r">200m</div><div class="a" style="color:var(--g3);">近隣道路まで</div></div>
+        <div class="expand-row"><div class="u">10〜19人</div><div class="r">240〜320m</div><div class="a">環状線・公園まで</div></div>
+        <div class="expand-row"><div class="u">20〜49人</div><div class="r">400〜520m</div><div class="a">住宅街・バス停まで</div></div>
+        <div class="expand-row"><div class="u">50人以上</div><div class="r">820m+</div><div class="a">高崎市街まで！</div></div>
+      </div>
+    </div>
+    <div class="expand-map-wrap reveal" style="display:flex;flex-direction:column;gap:12px;">
+      <div style="border-radius:12px;overflow:hidden;height:200px;border:2px solid rgba(255,255,255,.15);">
+        <img src="gomiru_images/img-expand.jpg" alt="高崎の街マップイラスト"
+          style="width:100%;height:100%;object-fit:cover;display:block;">
+      </div>
+      <div id="expand-map"></div>
+      <div class="expand-map-overlay">
+        <div class="expand-dot"></div>
+        現在8人参加中 — 半径200m
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== EVOLUTION ===== -->
+<section class="evo-sec" id="evolution">
+  <div class="reveal">
+    <p class="sec-eyebrow">CHARACTER EVOLUTION</p>
+    <h2 class="sec-h2">活動するほど、名前が変わる。</h2>
+    <p class="sec-lead">ポケモンのように、ゴミルくんはポイントに応じて進化します。Lv.4「ゴミルキング」に到達すると、アプリ全体にルールを追加できる「王の特権」が解放されます。</p>
+  </div>
+  <div class="evo-grid">
+    <!-- Lv1 ゴミル -->
+    <div class="evo-card reveal">
+      <div class="evo-lv">Level 01 — Start</div>
+      <div class="evo-face" style="background:#d4f0b8;">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="32" r="19" fill="#c8ee98"/>
+          <circle cx="23" cy="27" r="5.2" fill="white"/><circle cx="33" cy="27" r="5.2" fill="white"/>
+          <circle cx="24.2" cy="28.2" r="2.4" fill="#152810"/><circle cx="34.2" cy="28.2" r="2.4" fill="#152810"/>
+          <circle cx="24.9" cy="27.5" r="1" fill="white"/><circle cx="35.9" cy="27.5" r="1" fill="white"/>
+          <path d="M22 36 Q28 40.5 34 36" stroke="#152810" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <ellipse cx="18" cy="34" rx="5.2" ry="3.2" fill="#c8ee98"/>
+          <ellipse cx="38" cy="34" rx="5.2" ry="3.2" fill="#c8ee98"/>
+          <circle cx="28" cy="14" r="3.5" fill="rgba(255,255,255,.5)" stroke="rgba(255,255,255,.7)" stroke-width="1"/>
+        </svg>
+      </div>
+      <div class="evo-name-ja">ゴミル</div>
+      <div class="evo-name-en">GOMIRU</div>
+      <div class="evo-pt">0pt〜</div>
+      <div class="evo-desc">まんまるでかわいい基本形。街を守る清掃員のたまご。</div>
+      <div class="evo-arrow">→</div>
+    </div>
+    <!-- Lv2 ゴミルン -->
+    <div class="evo-card reveal">
+      <div class="evo-lv">Level 02 — Fighter</div>
+      <div class="evo-face" style="background:#b8ee90;">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="32" r="19" fill="#7ed45a"/>
+          <circle cx="23" cy="27" r="5.2" fill="white"/><circle cx="33" cy="27" r="5.2" fill="white"/>
+          <circle cx="24.2" cy="28.2" r="2.4" fill="#152810"/><circle cx="34.2" cy="28.2" r="2.4" fill="#152810"/>
+          <circle cx="25" cy="27.5" r="1" fill="white"/><circle cx="35" cy="27.5" r="1" fill="white"/>
+          <path d="M22 36 Q28 40.5 34 36" stroke="#152810" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <ellipse cx="18" cy="34" rx="5.2" ry="3.2" fill="#7ed45a"/>
+          <ellipse cx="38" cy="34" rx="5.2" ry="3.2" fill="#7ed45a"/>
+          <!-- ハチマキ -->
+          <rect x="12" y="21.5" width="32" height="6.5" rx="3.25" fill="#ef5a28" opacity=".92"/>
+          <rect x="12" y="21.5" width="32" height="2.4" rx="1.2" fill="rgba(255,255,255,.35)"/>
+        </svg>
+      </div>
+      <div class="evo-name-ja">ゴミルン</div>
+      <div class="evo-name-en">GOMIRUN</div>
+      <div class="evo-pt">10pt〜</div>
+      <div class="evo-desc">ハチマキを巻いてやる気満々。継続の証がにじみ出ている。</div>
+      <div class="evo-arrow">→</div>
+    </div>
+    <!-- Lv3 ゴミルード -->
+    <div class="evo-card reveal">
+      <div class="evo-lv">Level 03 — Warrior</div>
+      <div class="evo-face" style="background:#8cdc6c;">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="33" r="19" fill="#4caf2e"/>
+          <circle cx="23" cy="28" r="5.2" fill="white"/><circle cx="33" cy="28" r="5.2" fill="white"/>
+          <circle cx="24.2" cy="29.2" r="2.4" fill="#152810"/><circle cx="34.2" cy="29.2" r="2.4" fill="#152810"/>
+          <circle cx="25" cy="28.5" r="1" fill="white"/><circle cx="35" cy="28.5" r="1" fill="white"/>
+          <path d="M22 37 Q28 41.5 34 37" stroke="#152810" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <ellipse cx="18" cy="35" rx="5.2" ry="3.2" fill="#4caf2e"/>
+          <ellipse cx="38" cy="35" rx="5.2" ry="3.2" fill="#4caf2e"/>
+          <!-- 王冠 -->
+          <path d="M12 23 L16 13 L22 19 L28 10 L34 19 L40 13 L44 23 Z" fill="#f59e0b" stroke="#d97706" stroke-width=".8"/>
+          <circle cx="28" cy="10" r="2.8" fill="#e24b4a"/>
+          <circle cx="16" cy="13" r="2" fill="#fcd34d"/>
+          <circle cx="40" cy="13" r="2" fill="#fcd34d"/>
+        </svg>
+      </div>
+      <div class="evo-name-ja">ゴミルード</div>
+      <div class="evo-name-en">GOMIRUDE</div>
+      <div class="evo-pt">30pt〜</div>
+      <div class="evo-desc">王冠が輝く頼もしい清掃の戦士。街の守護者へと近づく。</div>
+      <div class="evo-arrow">→</div>
+    </div>
+    <!-- Lv4 ゴミルキング -->
+    <div class="evo-card reveal" style="background:var(--g5);">
+      <div class="evo-lv">Level 04 — KING</div>
+      <div class="evo-face" style="background:#1a6610;">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="30" r="20" fill="#FAEEDA" opacity=".5"/>
+          <circle cx="28" cy="33" r="18" fill="#1a6610"/>
+          <circle cx="23" cy="28" r="5.2" fill="white"/><circle cx="33" cy="28" r="5.2" fill="white"/>
+          <circle cx="24.2" cy="29.2" r="2.4" fill="#152810"/><circle cx="34.2" cy="29.2" r="2.4" fill="#152810"/>
+          <circle cx="25" cy="28.5" r="1.1" fill="white"/><circle cx="35" cy="28.5" r="1.1" fill="white"/>
+          <path d="M22 37 Q28 42 34 37" stroke="#7ed45a" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <ellipse cx="17.5" cy="35" rx="5.5" ry="3.4" fill="#1a6610"/>
+          <ellipse cx="38.5" cy="35" rx="5.5" ry="3.4" fill="#1a6610"/>
+          <!-- スーパー王冠 -->
+          <path d="M10 23.5 L15 11 L22 18.5 L28 7 L34 18.5 L41 11 L46 23.5 Z" fill="#f59e0b" stroke="#d97706" stroke-width="1"/>
+          <circle cx="28" cy="7" r="3.2" fill="#e24b4a"/>
+          <circle cx="15" cy="11" r="2.5" fill="#fcd34d"/>
+          <circle cx="41" cy="11" r="2.5" fill="#fcd34d"/>
+          <text x="25" y="48" font-size="10" fill="#fcd34d">★</text>
+        </svg>
+      </div>
+      <div class="evo-name-ja" style="color:var(--g1);">ゴミルキング</div>
+      <div class="evo-name-en">GOMIRU KING</div>
+      <div class="evo-pt">100pt〜</div>
+      <div class="evo-desc">最高形態。王の特権が解放され、アプリ全体にルールを追加できる。</div>
+      <span class="king-pill">👑 王の特権 解放</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CO2 IMPACT ===== -->
+<section class="impact-sec" id="impact">
+  <div class="impact-grid">
+    <div class="impact-visual reveal">
+      <div class="impact-bg-pattern"></div>
+      <div class="impact-stat-big" id="co2-count">247<span class="impact-stat-unit">g</span></div>
+      <div class="impact-stat-label">今月のCO₂削減換算量（アプリ全体）</div>
+      <div class="impact-items">
+        <div class="impact-item">
+          <div class="impact-item-icon">🛍</div>
+          <div>
+            <div class="impact-item-val">67袋</div>
+            <div class="impact-item-label">今月の回収ゴミ総量（コミュニティ全体）</div>
+          </div>
+        </div>
+        <div class="impact-item">
+          <div class="impact-item-icon">♻️</div>
+          <div>
+            <div class="impact-item-val">約3.7g / 袋</div>
+            <div class="impact-item-label">ペットボトル1本のCO₂換算削減量</div>
+          </div>
+        </div>
+        <div class="impact-item">
+          <div class="impact-item-icon">🌏</div>
+          <div>
+            <div class="impact-item-val">累計 1,840袋</div>
+            <div class="impact-item-label">アプリ開始からの全回収量</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="impact-text reveal">
+      <p class="sec-eyebrow">ENVIRONMENTAL IMPACT</p>
+      <h2 class="sec-h2">あなたの行動が、<br>地球を変える数値になる。</h2>
+      <p>ゴミを拾うたびにCO₂削減換算量がリアルタイムで更新されます。「今月みんなで○袋拾った＝○g削減」という形で、自分たちの活動が環境に与えたインパクトを数値で確認できます。</p>
+      <p>プラスチック・タバコ・食品容器などゴミの種類ごとにCO₂換算量を算出し、個人・グループ・アプリ全体の環境貢献度として可視化します。</p>
+      <div class="impact-note">
+        <strong>計算方法について：</strong> プラスチックゴミ1kgの焼却時CO₂排出量（約2.8kg-CO₂）を基準に、回収量から排出削減量を換算しています。正確な数値は回収ゴミの種類・重量に依存します。
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SDGs ===== -->
+<section class="sdgs-sec" id="sdgs">
+  <div class="sdgs-bg"></div>
+  <div style="position:relative;z-index:1;display:flex;align-items:center;gap:4vw;flex-wrap:wrap;">
+    <div style="flex:1;min-width:260px;">
+      <div class="reveal">
+    <p class="sec-eyebrow">SDGs</p>
+    <h2 class="sec-h2" style="color:#fff;">GOミルが取り組む、<br>持続可能な開発目標。</h2>
+    <p class="sec-lead" style="color:rgba(255,255,255,.7);">GOミルは、ゴミ拾いを通じて複数のSDGs達成に貢献します。学生一人ひとりの活動が、地域・環境・社会課題の解決につながります。</p>
+      </div>
+    </div>
+    <div class="reveal" style="flex-shrink:0;width:280px;border-radius:50%;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.3);">
+      <img src="gomiru_images/img-sdgs.jpg" alt="SDGs 地球イラスト"
+        style="width:100%;height:280px;object-fit:cover;display:block;">
+    </div>
+  </div>
+  <div class="sdgs-grid" style="position:relative;z-index:1;">
+    <div class="sdg-card reveal">
+      <div class="sdg-num-badge" style="background:#3f7e44;">11</div>
+      <div class="sdg-title">住み続けられるまちづくりを</div>
+      <div class="sdg-body">高崎経済大学周辺のゴミを継続的に回収し、データで汚れやすいスポットを可視化。学生の力で、誰もが住みやすい街をつくります。</div>
+      <span class="sdg-tag" style="background:rgba(63,126,68,.35);color:#7ed45a;">SUSTAINABLE CITIES</span>
+    </div>
+    <div class="sdg-card reveal">
+      <div class="sdg-num-badge" style="background:#bf8b2e;">12</div>
+      <div class="sdg-title">つくる責任、つかう責任</div>
+      <div class="sdg-body">回収ゴミをプラスチック・タバコ・食品容器などに分類記録し、「なぜゴミが生まれるか」を可視化。消費行動への気づきを促します。</div>
+      <span class="sdg-tag" style="background:rgba(191,139,46,.3);color:#fcd34d;">RESPONSIBLE CONSUMPTION</span>
+    </div>
+    <div class="sdg-card reveal">
+      <div class="sdg-num-badge" style="background:#3f7e44;">13</div>
+      <div class="sdg-title">気候変動に具体的な対策を</div>
+      <div class="sdg-body">回収ゴミのCO₂削減換算量をリアルタイムで表示。自分の行動が地球に与える変化を数値で体感することで、環境意識を高めます。</div>
+      <span class="sdg-tag" style="background:rgba(63,126,68,.35);color:#7ed45a;">CLIMATE ACTION</span>
+    </div>
+    <div class="sdg-card reveal">
+      <div class="sdg-num-badge" style="background:#c5192d;">4</div>
+      <div class="sdg-title">質の高い教育をみんなに</div>
+      <div class="sdg-body">ゴミ分類データや環境インパクトを大学の授業・研究に活用。実践的な環境学習のフィールドとしてGOミルを位置づけます。</div>
+      <span class="sdg-tag" style="background:rgba(197,25,45,.3);color:#fca5a5;">QUALITY EDUCATION</span>
+    </div>
+    <div class="sdg-card reveal">
+      <div class="sdg-num-badge" style="background:#dd1367;">10</div>
+      <div class="sdg-title">人や国の不平等をなくそう</div>
+      <div class="sdg-body">学生だけでなく地域住民・シニア・子どもも参加できる市民開放モードを実装。世代を超えたつながりが生まれます。</div>
+      <span class="sdg-tag" style="background:rgba(221,19,103,.3);color:#f9a8d4;">REDUCED INEQUALITIES</span>
+    </div>
+    <div class="sdg-card reveal">
+      <div class="sdg-num-badge" style="background:#19486a;">17</div>
+      <div class="sdg-title">パートナーシップで目標を達成</div>
+      <div class="sdg-body">月次ゴミ分類データを高崎市に自動レポート提出。大学・地域店舗・行政が連携し、データが実際の政策決定に活用されます。</div>
+      <span class="sdg-tag" style="background:rgba(25,72,106,.4);color:#93c5fd;">PARTNERSHIPS</span>
+    </div>
+  </div>
+  <div class="sdgs-note reveal" style="position:relative;z-index:1;">
+    <p>GOミルは単なるゴミ拾いアプリにとどまらず、<strong style="color:#fff;">地域課題を解決するSDGsプラットフォーム</strong>として大学・行政・地域が連携するエコシステムを目指しています。ゴミ分類データの蓄積と行政へのレポート提出を通じて、学生の活動が実際の政策立案に影響を与えます。</p>
+  </div>
+</section>
+
+<!-- ===== ADMIN DATA ===== -->
+<section class="admin-sec" id="data">
+  <div class="admin-inner">
+    <div class="reveal">
+      <p class="sec-eyebrow">DATA & REPORT</p>
+      <h2 class="sec-h2">ゴミのデータが、<br>行政を動かす。</h2>
+      <p class="sec-lead" style="margin-bottom:0;">GOミルで集まったゴミ分類データは、月次レポートとして高崎市へ自動提出。学生の清掃活動が、実際の政策決定に活用されます。</p>
+      <div class="data-flow">
+        <div class="data-step">
+          <div class="data-step-icon">📸</div>
+          <div>
+            <div class="data-step-title">ゴミ種類のタグ付け</div>
+            <div class="data-step-body">レポート時にプラスチック・タバコ・食品容器などを選択。裏側でデータが自動集計されます。</div>
+          </div>
+        </div>
+        <div class="data-step">
+          <div class="data-step-icon">📊</div>
+          <div>
+            <div class="data-step-title">ホットスポット分析</div>
+            <div class="data-step-body">GPSデータと種類データを組み合わせ、「どこに・どんなゴミが多いか」をヒートマップで可視化。</div>
+          </div>
+        </div>
+        <div class="data-step">
+          <div class="data-step-icon">📋</div>
+          <div>
+            <div class="data-step-title">月次レポート自動生成</div>
+            <div class="data-step-body">ゴミ多発スポットTOP5・種類別割合・CO₂削減量を自動レポートとして高崎市へ提出。</div>
+          </div>
+        </div>
+        <div class="data-step">
+          <div class="data-step-icon">🏛️</div>
+          <div>
+            <div class="data-step-title">政策立案への活用</div>
+            <div class="data-step-body">行政がゴミ回収ルートの最適化・看板設置・啓発活動の判断材料として活用できます。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="data-card reveal">
+      <div class="data-card-title">月次ゴミ分類レポート<br><span style="font-size:13px;font-weight:400;color:var(--sub);">2026年4月 — 高崎経大周辺エリア</span></div>
+      <div class="data-report-preview">
+        <div class="drp-header">
+          <span>ゴミ多発スポット TOP 5</span>
+          <span style="color:var(--g2);">今月 67袋回収</span>
+        </div>
+        <div class="drp-row">
+          <div class="drp-rank">1</div>
+          <div class="drp-name">北門前 環状線沿い</div>
+          <div class="drp-bar-wrap"><div class="drp-bar" style="width:85%;"></div></div>
+          <div class="drp-count">18袋</div>
+        </div>
+        <div class="drp-row">
+          <div class="drp-rank">2</div>
+          <div class="drp-name">東門 自転車置き場</div>
+          <div class="drp-bar-wrap"><div class="drp-bar" style="width:65%;"></div></div>
+          <div class="drp-count">14袋</div>
+        </div>
+        <div class="drp-row">
+          <div class="drp-rank">3</div>
+          <div class="drp-name">西側 バス停付近</div>
+          <div class="drp-bar-wrap"><div class="drp-bar" style="width:52%;"></div></div>
+          <div class="drp-count">11袋</div>
+        </div>
+        <div class="drp-row">
+          <div class="drp-rank">4</div>
+          <div class="drp-name">正門前 歩道</div>
+          <div class="drp-bar-wrap"><div class="drp-bar" style="width:40%;"></div></div>
+          <div class="drp-count">8袋</div>
+        </div>
+        <div class="drp-row">
+          <div class="drp-rank">5</div>
+          <div class="drp-name">南側 交差点</div>
+          <div class="drp-bar-wrap"><div class="drp-bar" style="width:30%;"></div></div>
+          <div class="drp-count">6袋</div>
+        </div>
+      </div>
+      <div style="margin-top:1rem;display:flex;gap:6px;flex-wrap:wrap;">
+        <div style="background:var(--g5);border-radius:8px;padding:8px 12px;flex:1;min-width:100px;">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">最多ゴミ種類</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);">🍶 プラスチック 42%</div>
+        </div>
+        <div style="background:var(--g5);border-radius:8px;padding:8px 12px;flex:1;min-width:100px;">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">CO₂削減換算</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);">🌱 247g 削減</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FEATURES ===== -->
+<section class="features-sec" id="features">
+  <div class="reveal">
+    <p class="sec-eyebrow">FEATURES</p>
+    <h2 class="sec-h2">続けたくなる、<br>すべての仕掛け。</h2>
+  </div>
+  <div class="feat-grid">
+    <div class="feat-card reveal">
+      <span class="feat-tag tag-g">MAP</span>
+      <div class="feat-title">リアルマップで活動を可視化</div>
+      <div class="feat-body">OpenStreetMapベースの本物の地図上にゴミのピンが立ちます。赤ピン（未回収）・緑ピン（回収済み）・ヒートマップで、街の清潔度がひと目でわかります。</div>
+    </div>
+    <div class="feat-card reveal">
+      <span class="feat-tag tag-a">AI</span>
+      <div class="feat-title">AIがゴミの量と種類を判定</div>
+      <div class="feat-body">写真からゴミの量を自動判定して1〜3ptを付与。同時にゴミの種類もAIがタグ付けし、分類データとして蓄積。行政レポートの元データになります。</div>
+    </div>
+    <div class="feat-card reveal">
+      <span class="feat-tag tag-g">GAUGE</span>
+      <div class="feat-title">コミュニティゲージで<br>みんなで目標達成</div>
+      <div class="feat-body">月次の「100袋達成ゲージ」が全員に共有されます。満タンになるとアプリ全ユーザーに特典が届く仕組みで、個人の活動がコミュニティの達成感につながります。</div>
+    </div>
+    <div class="feat-card reveal">
+      <span class="feat-tag tag-g">GROUP</span>
+      <div class="feat-title">ゼミ・サークルで<br>ランキング対決</div>
+      <div class="feat-body">グループを作ってチーム戦。複数人で同時活動するとボーナスポイントが発生。経済学サークル vs テニスサークル vs Bゼミ…キャンパス全体が動き出します。</div>
+    </div>
+    <div class="feat-card reveal">
+      <span class="feat-tag tag-b">DATA</span>
+      <div class="feat-title">ゴミ分類データを<br>行政へ自動レポート</div>
+      <div class="feat-body">月次でゴミ多発スポットTOP5・種類別割合・CO₂削減量を自動集計して高崎市に提出。学生の活動が政策立案の材料になります。</div>
+    </div>
+    <div class="feat-card reveal">
+      <span class="feat-tag tag-a">KING</span>
+      <div class="feat-title">100ptで王の特権が解放</div>
+      <div class="feat-body">ゴミルキングに進化するとルール追加ページが解放。エリアボーナス・時間帯ボーナス・特別ミッションなど、あなたのルールがアプリ全体に適用されます。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== EVENTS ===== -->
+<section class="events-sec" id="events">
+  <div class="reveal">
+    <p class="sec-eyebrow">MONTHLY EVENTS</p>
+    <h2 class="sec-h2">毎月、何かが始まる。</h2>
+    <p class="sec-lead">季節と連動した地域清掃イベントが、一年を通じて開催されます。</p>
+  </div>
+  <div style="margin-top:2.5rem;border-radius:12px;overflow:hidden;height:240px;margin-bottom:2px;">
+    <img src="gomiru_images/img-events.jpg" alt="桜の並木道 春のイベントイメージ"
+      style="width:100%;height:100%;object-fit:cover;display:block;object-position:center 60%;">
+  </div>
+  <div class="ev-grid" style="margin-top:0;">
+    <div class="ev-card reveal"><div class="ev-mon">APR</div><div class="ev-mon-ja">4月</div><div class="ev-title">🌸 新歓クリーン</div><div class="ev-body">新入生歓迎×花見シーズン。新入生は初回ボーナス+5pt。</div><span class="ev-pill">ポイント 2倍</span></div>
+    <div class="ev-card reveal"><div class="ev-mon">MAY</div><div class="ev-mon-ja">5月</div><div class="ev-title">🌿 GWゴミ作戦</div><div class="ev-body">GW中の人出で増えるゴミを集中回収。連休中の活動がお得に。</div><span class="ev-pill">ポイント 1.5倍</span></div>
+    <div class="ev-card reveal"><div class="ev-mon">JUL</div><div class="ev-mon-ja">7月</div><div class="ev-title">🏖 夏前大作戦</div><div class="ev-body">地域住民も参加できるオープンイベント。学生と街がつながる夏の一大清掃。</div><span class="ev-pill">地域合同</span></div>
+    <div class="ev-card reveal"><div class="ev-mon">SEP</div><div class="ev-mon-ja">9月</div><div class="ev-title">🍂 秋のゴミ狩り</div><div class="ev-body">落ち葉シーズンと一緒に増えるゴミを集中回収。</div><span class="ev-pill">ポイント 1.5倍</span></div>
+    <div class="ev-card reveal"><div class="ev-mon">NOV</div><div class="ev-mon-ja">11月</div><div class="ev-title">🏆 GOミル杯</div><div class="ev-body">年間最大のグループ対抗イベント。優勝チームには地域表彰と特別クーポンを贈呈。</div><span class="ev-pill">年間最大戦</span></div>
+    <div class="ev-card reveal"><div class="ev-mon">MAR</div><div class="ev-mon-ja">3月</div><div class="ev-title">🎓 卒業クリーン</div><div class="ev-body">卒業生が最後に街へ恩返し。4年間の活動履歴を振り返りながら仲間と歩く。</div><span class="ev-pill">卒業記念</span></div>
+  </div>
+</section>
+
+<!-- ===== SHOPS ===== -->
+<section class="shops-sec" id="shops">
+  <div class="reveal">
+    <p class="sec-eyebrow">PARTNER SHOPS</p>
+    <h2 class="sec-h2">ゴミを拾って、<br>街に出かける。</h2>
+    <p class="sec-lead">貯まったポイントを大学周辺のお店で使いましょう。</p>
+  </div>
+  <div style="margin-top:2.5rem;border-radius:12px;overflow:hidden;height:260px;margin-bottom:2px;">
+    <img src="gomiru_images/img-shops.jpg" alt="日本の商店街イラスト"
+      style="width:100%;height:100%;object-fit:cover;display:block;">
+  </div>
+  <div class="shops-grid" style="margin-top:0;">
+    <div class="shop-card reveal"><div class="shop-num">01</div><div><div class="shop-name">からさき食堂</div><div class="shop-genre">定食・学食風 — 大学至近</div><div class="shop-note">高崎経済大学生御用達の老舗。独自メニューが話題の、地元に愛される一軒。</div><div class="shop-pt">→ 5ptからクーポン交換可</div></div></div>
+    <div class="shop-card reveal"><div class="shop-num">02</div><div><div class="shop-name">Coffee Tetsugaku</div><div class="shop-genre">カフェ・スイーツ — 緑町</div><div class="shop-note">大学から約800m。パフェ・ピザ・パスタが揃い、勉強にも最適なカフェ。</div><div class="shop-pt">→ 5ptからクーポン交換可</div></div></div>
+    <div class="shop-card reveal"><div class="shop-num">03</div><div><div class="shop-name">洋麺酒場 Naruze</div><div class="shop-genre">パスタ・居酒屋 — 下小塙町</div><div class="shop-note">大学から約700m。パスタ・ピザが自慢。ゼミ打ち上げに最適な一軒。</div><div class="shop-pt">→ 8ptからクーポン交換可</div></div></div>
+    <div class="shop-card reveal"><div class="shop-num">04</div><div><div class="shop-name">Cafe Capable</div><div class="shop-genre">ガレット・カフェ — 下鳥町</div><div class="shop-note">大学から約600m。本格ガレットが評判のおしゃれカフェ。</div><div class="shop-pt">→ 5ptからクーポン交換可</div></div></div>
+    <div class="shop-card reveal"><div class="shop-num">05</div><div><div class="shop-name">ラーメン 中市</div><div class="shop-genre">ラーメン — 飯塚町</div><div class="shop-note">深夜0時半まで営業。厚切りチャーシューと濃厚スープが人気。</div><div class="shop-pt">→ 5ptからクーポン交換可</div></div></div>
+    <div class="shop-card reveal" style="background:var(--g5);border-color:var(--g3);"><div class="shop-num" style="color:var(--g3);">+</div><div><div class="shop-name" style="color:var(--g1);">提携店舗を募集中</div><div class="shop-genre">高崎経済大学周辺のお店</div><div class="shop-note">GOミルとの提携にご興味のある店舗様は、ぜひご連絡ください。</div><div class="shop-pt" style="color:var(--g2);">→ お問い合わせはこちら</div></div></div>
+  </div>
+</section>
+
+<!-- ===== CTA ===== -->
+<section class="cta-sec" id="cta">
+  <div class="cta-bg"></div>
+  <p class="sec-eyebrow reveal" style="justify-content:center;color:var(--g4);">GET STARTED</p>
+  <h2 class="cta-h2 reveal">さあ、始めよう。<br>高崎を、きれいに。</h2>
+  <p class="cta-lead reveal">スマホのブラウザから今すぐ使えます。インストール不要。</p>
+  <div class="cta-btns reveal">
+    <a href="#" class="btn-white">📱 アプリを試してみる</a>
+    <a href="https://github.com/" class="btn-ghost">GitHub でソースを見る</a>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="footer-top">
+    <div>
+      <div class="footer-logo">
+        <div class="footer-logo-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M9 1.5C7.5 4 4.5 5 4.5 8c0 2.5 2 4.5 4.5 4.5S13.5 10.5 13.5 8c0-3-3-4-4.5-6.5z" fill="#a8dc8e"/>
+            <circle cx="9" cy="8.5" r="2" fill="white" opacity=".8"/>
+          </svg>
+        </div>
+        <div>
+          <span class="footer-logo-en">GOMIRU</span>
+          <span class="footer-logo-ja">ごみる</span>
+        </div>
+      </div>
+      <p class="footer-desc">高崎経済大学発の地域ゴミ拾いアプリ。<br>ゴミを拾うほど、街が広がる。<br>2026 — 学生プロジェクト</p>
+    </div>
+    <div class="footer-col">
+      <h4>Navigation</h4>
+      <ul>
+        <li><a href="#concept">コンセプト</a></li>
+        <li><a href="#how">使い方（4ステップ）</a></li>
+        <li><a href="#evolution">キャラクター進化</a></li>
+        <li><a href="#sdgs">SDGsへの取り組み</a></li>
+        <li><a href="#events">月間イベント</a></li>
+        <li><a href="#shops">提携店舗</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Links</h4>
+      <ul>
+        <li><a href="#">アプリを開く</a></li>
+        <li><a href="#">GitHub リポジトリ</a></li>
+        <li><a href="#">ゴミデータ・行政レポート</a></li>
+        <li><a href="#">提携店舗の申し込み</a></li>
+        <li><a href="https://www.takasaki-u.ac.jp/">高崎経済大学</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-copy">© 2026 GOMIRU Project. All rights reserved.</div>
+    <div class="footer-university">高崎経済大学 学生プロジェクト</div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+// ===== LEAFLET MAP =====
+const UNIV = [36.35545, 139.00715];
+const map = L.map('expand-map', { zoomControl:false, scrollWheelZoom:false, attributionControl:false }).setView(UNIV, 16);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
+
+// University label
+L.marker(UNIV, { icon: L.divIcon({
+  html:`<div style="background:#1a6610;color:#fff;padding:4px 9px;border-radius:20px;font-size:10px;font-weight:800;white-space:nowrap;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25);">🏫 高崎経済大学</div>`,
+  className:'', iconAnchor:[60, 10]
+})}).addTo(map);
+
+// Expanding circle (current: 200m for 8 users)
+const circle = L.circle(UNIV, {
+  radius: 200, color:'#34991e', fillColor:'#34991e',
+  fillOpacity:.12, weight:2, dashArray:'6 4'
+}).addTo(map);
+
+// Locked area (grayed out beyond 200m)
+L.circle(UNIV, {
+  radius: 500, color:'#aaa', fillColor:'#ccc',
+  fillOpacity:.06, weight:1, dashArray:'4 6'
+}).addTo(map);
+
+// Pins
+const pinsData = [
+  {pos:[36.35635, 139.00715], type:'red', locked:false},
+  {pos:[36.35545, 139.00820], type:'red', locked:false},
+  {pos:[36.35455, 139.00620], type:'green', locked:false},
+  {pos:[36.35820, 139.00715], type:'red', locked:true},
+  {pos:[36.35300, 139.01050], type:'red', locked:true},
+];
+pinsData.forEach(p => {
+  const icon = p.locked
+    ? L.divIcon({ html:`<div style="width:20px;height:20px;background:rgba(160,160,160,.8);border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;">🔒</div>`, className:'', iconSize:[20,20], iconAnchor:[10,10] })
+    : L.divIcon({ html:`<div style="width:16px;height:16px;background:${p.type==='red'?'#ef5a28':'#34991e'};border:2.5px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>`, className:'', iconSize:[16,16], iconAnchor:[8,16] });
+  L.marker(p.pos, { icon }).addTo(map);
+});
+
+// Animate circle expanding
+let expanding = false;
+const expandMap = document.getElementById('expand-map');
+const expandObs = new IntersectionObserver(entries => {
+  if (entries[0].isIntersecting && !expanding) {
+    expanding = true;
+    let r = 80; const target = 200;
+    const interval = setInterval(() => {
+      r = Math.min(r + 8, target);
+      circle.setRadius(r);
+      if (r >= target) clearInterval(interval);
+    }, 40);
+    map.invalidateSize();
+  }
+}, { threshold:.3 });
+expandObs.observe(expandMap);
+
+// ===== SCROLL REVEAL =====
+const revEls = document.querySelectorAll('.reveal');
+const revObs = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const siblings = [...entry.target.parentElement.querySelectorAll('.reveal')];
+      const idx = siblings.indexOf(entry.target);
+      setTimeout(() => entry.target.classList.add('on'), idx * 75);
+      revObs.unobserve(entry.target);
+    }
+  });
+}, { threshold:.08, rootMargin:'0px 0px -30px 0px' });
+revEls.forEach(el => revObs.observe(el));
+
+// ===== GAUGE ANIMATION =====
+const gaugeObs = new IntersectionObserver(entries => {
+  if (entries[0].isIntersecting) {
+    let n = 0;
+    const t = setInterval(() => {
+      n = Math.min(n + 2, 67);
+      document.getElementById('gauge-num').textContent = n;
+      if (n >= 67) clearInterval(t);
+    }, 25);
+    gaugeObs.disconnect();
+  }
+}, { threshold:.5 });
+gaugeObs.observe(document.getElementById('gauge-wrap'));
+
+// ===== NAV SCROLL =====
+window.addEventListener('scroll', () => {
+  document.getElementById('main-nav').style.background =
+    window.scrollY > 50 ? 'rgba(248,245,239,.98)' : 'rgba(248,245,239,.95)';
+});
+
+// ===== HAMBURGER =====
+function toggleNav() {
+  const ul = document.querySelector('.nav-links');
+  const cta = document.querySelector('.nav-cta');
+  const open = ul.style.display === 'flex';
+  if (open) {
+    ul.style.display = ''; cta.style.display = '';
+  } else {
+    ul.style.cssText = 'display:flex;flex-direction:column;position:fixed;top:60px;left:0;right:0;background:rgba(248,245,239,.98);padding:1.25rem 6vw;border-bottom:1px solid rgba(26,102,16,.12);z-index:199;backdrop-filter:blur(12px);gap:1rem;';
+    cta.style.cssText = 'display:block;margin:0.5rem 0;';
+  }
+}
+</script>
+</body>
+</html>
